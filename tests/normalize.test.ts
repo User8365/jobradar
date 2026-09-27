@@ -1,4 +1,5 @@
-import { searchAdzunaJobs, searchFranceTravailJobs, getSourceRegistry } from '../lib/sources';
+import { searchAdzunaJobs, searchFranceTravailJobs, getSourceRegistry, sourceSearchAll } from '../lib/sources';
+import { classifyRemoteMetadata } from '../lib/remote';
 
 describe('normalize', () => {
   it('works', () => {
@@ -29,5 +30,47 @@ describe('source registry', () => {
 
     const jobs = await searchFranceTravailJobs('support informatique');
     expect(jobs).toEqual([]);
+  });
+
+  it('keeps only the enabled remote sources active in the default registry', async () => {
+    const registry = getSourceRegistry();
+    const enabledIds = registry.filter((source) => source.enabledByDefault).map((source) => source.id);
+
+    expect(enabledIds).toEqual(['france_travail', 'remote_ok', 'remotive', 'arbeitnow', 'we_work_remotely']);
+    const jobs = await sourceSearchAll('responsable support informatique');
+    expect(Array.isArray(jobs)).toBe(true);
+  });
+});
+
+describe('remote metadata rules', () => {
+  it('treats text-only remote mentions as unknown, not full_remote', () => {
+    const result = classifyRemoteMetadata({
+      source_id: 'arbeitnow',
+      remote_type: null,
+      remote_scope: null,
+      remote_evidence: null,
+      remote_scope_text: null,
+      description: 'We are remote friendly, work from home and teletravail accepted.',
+      raw_data: { location: 'Paris, France', tags: ['remote'] },
+    } as any);
+
+    expect(result.remote_type).toBe('unknown');
+    expect(result.remote_evidence).toBe('text_only');
+  });
+
+  it('keeps remote-only sources as full_remote with a restricted scope when explicit', () => {
+    const result = classifyRemoteMetadata({
+      source_id: 'remote_ok',
+      remote_type: null,
+      remote_scope: null,
+      remote_evidence: null,
+      remote_scope_text: null,
+      description: 'Remote role',
+      raw_data: { location: 'US only', tags: ['remote', 'usa'] },
+    } as any);
+
+    expect(result.remote_type).toBe('full_remote');
+    expect(result.remote_scope).toBe('country_list');
+    expect(result.remote_evidence).toBe('remote_only_source');
   });
 });

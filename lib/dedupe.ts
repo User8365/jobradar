@@ -26,7 +26,13 @@ export async function deduplicateAndSaveJobs(jobs: NormalizedJob[]): Promise<{ n
       WHERE canonical_url = ${canonicalUrl}
          OR fingerprint = ${fingerprint}
          OR (external_id IS NOT NULL AND source_id = ${job.source_id} AND external_id = ${job.external_id})
-      ORDER BY created_at DESC
+      ORDER BY
+        CASE
+          WHEN canonical_url = ${canonicalUrl} THEN 0
+          WHEN fingerprint = ${fingerprint} THEN 1
+          ELSE 2
+        END,
+        created_at DESC
       LIMIT 1;
     `;
 
@@ -41,6 +47,9 @@ export async function deduplicateAndSaveJobs(jobs: NormalizedJob[]): Promise<{ n
           company = ${normalizedJob.company ?? null},
           location = ${normalizedJob.location ?? null},
           remote_type = ${normalizedJob.remote_type ?? null},
+          remote_scope = ${normalizedJob.remote_scope ?? null},
+          remote_evidence = ${normalizedJob.remote_evidence ?? null},
+          remote_scope_text = ${normalizedJob.remote_scope_text ?? null},
           contract_type = ${normalizedJob.contract_type ?? null},
           work_time = ${normalizedJob.work_time ?? null},
           salary_text = ${normalizedJob.salary_text ?? null},
@@ -67,6 +76,9 @@ export async function deduplicateAndSaveJobs(jobs: NormalizedJob[]): Promise<{ n
         company,
         location,
         remote_type,
+        remote_scope,
+        remote_evidence,
+        remote_scope_text,
         contract_type,
         work_time,
         salary_text,
@@ -86,6 +98,9 @@ export async function deduplicateAndSaveJobs(jobs: NormalizedJob[]): Promise<{ n
         ${normalizedJob.company ?? null},
         ${normalizedJob.location ?? null},
         ${normalizedJob.remote_type ?? null},
+        ${normalizedJob.remote_scope ?? null},
+        ${normalizedJob.remote_evidence ?? null},
+        ${normalizedJob.remote_scope_text ?? null},
         ${normalizedJob.contract_type ?? null},
         ${normalizedJob.work_time ?? null},
         ${normalizedJob.salary_text ?? null},
@@ -97,7 +112,28 @@ export async function deduplicateAndSaveJobs(jobs: NormalizedJob[]): Promise<{ n
         ${JSON.stringify(normalizedJob.raw_data ?? {})}::jsonb,
         NOW()
       )
-      ON CONFLICT (canonical_url) WHERE canonical_url IS NOT NULL AND canonical_url <> '' DO NOTHING
+      ON CONFLICT (canonical_url) WHERE canonical_url IS NOT NULL AND canonical_url <> ''
+      DO UPDATE SET
+        source_id = EXCLUDED.source_id,
+        external_id = EXCLUDED.external_id,
+        title = EXCLUDED.title,
+        company = EXCLUDED.company,
+        location = EXCLUDED.location,
+        remote_type = EXCLUDED.remote_type,
+        remote_scope = EXCLUDED.remote_scope,
+        remote_evidence = EXCLUDED.remote_evidence,
+        remote_scope_text = EXCLUDED.remote_scope_text,
+        contract_type = EXCLUDED.contract_type,
+        work_time = EXCLUDED.work_time,
+        salary_text = EXCLUDED.salary_text,
+        salary_min = EXCLUDED.salary_min,
+        salary_max = EXCLUDED.salary_max,
+        description = EXCLUDED.description,
+        published_at = EXCLUDED.published_at,
+        fingerprint = EXCLUDED.fingerprint,
+        raw_data = EXCLUDED.raw_data,
+        last_seen_at = NOW(),
+        updated_at = NOW()
       RETURNING id;
     `;
 

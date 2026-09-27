@@ -25,6 +25,8 @@ export function normalizeUrl(input: string): string {
   }
 }
 
+import { createHash } from 'node:crypto';
+
 export function calculateFingerprint(title: string, company: string, location: string): string {
   const content = [title, company, location]
     .map((value) => normalizeText(value || ''))
@@ -36,5 +38,5 @@ export function calculateFingerprint(title: string, company: string, location: s
     .replace(/\s+/g, ' ')
     .trim();
 
-  return Buffer.from(content).toString('base64url');
+  return createHash('sha256').update(content).digest('hex');
 }

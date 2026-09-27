@@ -1,14 +1,18 @@
 import { NormalizedJob } from '../types';
 import { searchAdzunaJobs } from './adzuna';
 import { searchApecJobs } from './apec';
+import { searchArbeitnowJobs } from './arbeitnow';
 import { searchFranceTravailJobs } from './france-travail';
 import { searchHackerNewsJobs } from './hackernews';
 import { searchHelloWorkJobs } from './hellowork';
+import { searchRemoteOkJobs } from './remote-ok';
+import { searchRemotiveJobs } from './remotive';
+import { searchWeWorkRemotelyJobs } from './we-work-remotely';
 
 export type SourceVerdict = 'GO' | 'GO_WITH_CREDENTIALS' | 'GO_WITH_LIMITS' | 'NO_GO' | 'NOT_TESTED';
 
 export interface SourceDescriptor {
-  id: 'adzuna' | 'apec' | 'france_travail' | 'hackernews' | 'hellowork';
+  id: 'adzuna' | 'apec' | 'france_travail' | 'hackernews' | 'hellowork' | 'remote_ok' | 'remotive' | 'arbeitnow' | 'we_work_remotely';
   name: string;
   credentialsRequired: string[];
   enabledByDefault: boolean;
@@ -33,6 +37,38 @@ export function getSourceRegistry(): SourceDescriptor[] {
       enabledByDefault: true,
       verdict: 'GO_WITH_CREDENTIALS',
       search: searchFranceTravailJobs,
+    },
+    {
+      id: 'remote_ok',
+      name: 'Remote OK',
+      credentialsRequired: [],
+      enabledByDefault: true,
+      verdict: 'GO',
+      search: searchRemoteOkJobs,
+    },
+    {
+      id: 'remotive',
+      name: 'Remotive',
+      credentialsRequired: [],
+      enabledByDefault: true,
+      verdict: 'GO',
+      search: searchRemotiveJobs,
+    },
+    {
+      id: 'arbeitnow',
+      name: 'Arbeitnow',
+      credentialsRequired: [],
+      enabledByDefault: true,
+      verdict: 'GO',
+      search: searchArbeitnowJobs,
+    },
+    {
+      id: 'we_work_remotely',
+      name: 'We Work Remotely',
+      credentialsRequired: [],
+      enabledByDefault: true,
+      verdict: 'GO_WITH_LIMITS',
+      search: searchWeWorkRemotelyJobs,
     },
     {
       id: 'hellowork',
@@ -62,12 +98,16 @@ export function getSourceRegistry(): SourceDescriptor[] {
 }
 
 export async function sourceSearchAll(query: string): Promise<NormalizedJob[]> {
-  const sources = getSourceRegistry().filter((source) => source.enabledByDefault === true);
   const jobs: NormalizedJob[] = [];
+  const sources = getSourceRegistry().filter((source) => source.enabledByDefault === true);
 
   for (const source of sources) {
-    const result = await source.search(query);
-    jobs.push(...result);
+    try {
+      const result = await source.search(query);
+      jobs.push(...result);
+    } catch {
+      // ignore failed sources and continue scanning the remaining enabled sources
+    }
   }
 
   return jobs;
@@ -75,8 +115,12 @@ export async function sourceSearchAll(query: string): Promise<NormalizedJob[]> {
 
 export { searchAdzunaJobs } from './adzuna';
 export { searchApecJobs } from './apec';
+export { searchArbeitnowJobs } from './arbeitnow';
 export { searchFranceTravailJobs } from './france-travail';
 export { searchHackerNewsJobs } from './hackernews';
 export { searchHelloWorkJobs } from './hellowork';
+export { searchRemoteOkJobs } from './remote-ok';
+export { searchRemotiveJobs } from './remotive';
+export { searchWeWorkRemotelyJobs } from './we-work-remotely';
 
 export * from './types';

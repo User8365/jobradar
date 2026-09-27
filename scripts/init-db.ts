@@ -14,6 +14,9 @@ async function initializeDatabase() {
       company TEXT,
       location TEXT,
       remote_type TEXT,
+      remote_scope TEXT,
+      remote_evidence TEXT,
+      remote_scope_text TEXT,
       contract_type TEXT,
       work_time TEXT,
       salary_text TEXT,
@@ -38,6 +41,9 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS company TEXT,
       ADD COLUMN IF NOT EXISTS location TEXT,
       ADD COLUMN IF NOT EXISTS remote_type TEXT,
+      ADD COLUMN IF NOT EXISTS remote_scope TEXT,
+      ADD COLUMN IF NOT EXISTS remote_evidence TEXT,
+      ADD COLUMN IF NOT EXISTS remote_scope_text TEXT,
       ADD COLUMN IF NOT EXISTS contract_type TEXT,
       ADD COLUMN IF NOT EXISTS work_time TEXT,
       ADD COLUMN IF NOT EXISTS salary_text TEXT,
@@ -53,7 +59,11 @@ async function initializeDatabase() {
   `;
 
   await sql`
-    CREATE UNIQUE INDEX IF NOT EXISTS jobs_fingerprint_unique_idx
+    DROP INDEX IF EXISTS jobs_fingerprint_unique_idx;
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS jobs_fingerprint_idx
     ON jobs (fingerprint)
     WHERE fingerprint IS NOT NULL AND fingerprint <> '';
   `;
