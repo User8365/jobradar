@@ -1,1 +1,76 @@
-console.log('Database initialization placeholder');
+import { getDb } from '../lib/db/client';
+import { schema } from '../lib/db/schema';
+
+async function initializeDatabase() {
+  const sql = getDb();
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS jobs (
+      id SERIAL PRIMARY KEY,
+      source_id TEXT,
+      external_id TEXT,
+      canonical_url TEXT,
+      title TEXT,
+      company TEXT,
+      location TEXT,
+      remote_type TEXT,
+      contract_type TEXT,
+      work_time TEXT,
+      salary_text TEXT,
+      salary_min INTEGER,
+      salary_max INTEGER,
+      description TEXT,
+      published_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_seen_at TIMESTAMPTZ,
+      fingerprint TEXT,
+      raw_data JSONB
+    );
+  `;
+
+  await sql`
+    ALTER TABLE jobs
+      ADD COLUMN IF NOT EXISTS source_id TEXT,
+      ADD COLUMN IF NOT EXISTS external_id TEXT,
+      ADD COLUMN IF NOT EXISTS canonical_url TEXT,
+      ADD COLUMN IF NOT EXISTS title TEXT,
+      ADD COLUMN IF NOT EXISTS company TEXT,
+      ADD COLUMN IF NOT EXISTS location TEXT,
+      ADD COLUMN IF NOT EXISTS remote_type TEXT,
+      ADD COLUMN IF NOT EXISTS contract_type TEXT,
+      ADD COLUMN IF NOT EXISTS work_time TEXT,
+      ADD COLUMN IF NOT EXISTS salary_text TEXT,
+      ADD COLUMN IF NOT EXISTS salary_min INTEGER,
+      ADD COLUMN IF NOT EXISTS salary_max INTEGER,
+      ADD COLUMN IF NOT EXISTS description TEXT,
+      ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS fingerprint TEXT,
+      ADD COLUMN IF NOT EXISTS raw_data JSONB;
+  `;
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS jobs_fingerprint_unique_idx
+    ON jobs (fingerprint);
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS jobs_source_external_idx
+    ON jobs (source_id, external_id);
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS jobs_canonical_url_idx
+    ON jobs (canonical_url);
+  `;
+
+  console.log(`Database initialized: ${schema.jobs}`);
+}
+
+initializeDatabase().catch((error) => {
+  console.error('Database initialization failed:', error);
+  process.exit(1);
+});
