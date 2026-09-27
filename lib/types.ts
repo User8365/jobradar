@@ -13,7 +13,7 @@ export type RemoteType = 'onsite' | 'hybrid' | 'full_remote' | 'unknown';
 export type RemoteScope = 'worldwide' | 'france' | 'europe' | 'country_list' | 'timezone_restricted' | 'unknown';
 export type RemoteEvidence = 'structured_field' | 'explicit_source_label' | 'remote_only_source' | 'text_only' | 'none';
 
-export type JobStatus = 'new' | 'favorite' | 'applied' | 'dismissed' | 'archived';
+export type JobStatus = 'new' | 'seen' | 'favorite' | 'dismissed' | 'applied';
 
 export interface JobRecord {
   id: string;

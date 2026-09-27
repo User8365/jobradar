@@ -23,6 +23,7 @@ async function initializeDatabase() {
       salary_min INTEGER,
       salary_max INTEGER,
       description TEXT,
+      status TEXT NOT NULL DEFAULT 'new',
       published_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -50,12 +51,31 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS salary_min INTEGER,
       ADD COLUMN IF NOT EXISTS salary_max INTEGER,
       ADD COLUMN IF NOT EXISTS description TEXT,
+      ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'new',
       ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS fingerprint TEXT,
       ADD COLUMN IF NOT EXISTS raw_data JSONB;
+  `;
+
+  await sql`
+    UPDATE jobs
+    SET status = 'new'
+    WHERE status IS NULL OR status NOT IN ('new', 'seen', 'favorite', 'dismissed', 'applied');
+  `;
+
+  await sql`
+    ALTER TABLE jobs
+      DROP CONSTRAINT IF EXISTS jobs_status_check,
+      ADD CONSTRAINT jobs_status_check
+      CHECK (status IN ('new', 'seen', 'favorite', 'dismissed', 'applied'));
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS jobs_status_idx
+    ON jobs (status);
   `;
 
   await sql`
