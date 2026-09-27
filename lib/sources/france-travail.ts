@@ -8,12 +8,12 @@ export async function searchFranceTravailJobs(query: string): Promise<Normalized
     return [];
   }
 
-  const tokenUrl = 'https://api.francetravail.io/oauth2/token';
+  const tokenUrl = 'https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=/partenaire';
   const tokenBody = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: clientId,
     client_secret: clientSecret,
-    scope: process.env.FRANCE_TRAVAIL_SCOPE || 'api_offresdemploi',
+    scope: 'api_offresdemploiv2 o2dsoffre',
   });
 
   const tokenResponse = await fetch(tokenUrl, {
@@ -26,6 +26,10 @@ export async function searchFranceTravailJobs(query: string): Promise<Normalized
   });
 
   if (!tokenResponse.ok) {
+    const errorPayload = (await tokenResponse.json().catch(() => ({}))) as { error?: string; error_description?: string };
+    const errorText = errorPayload.error || 'unknown_error';
+    const errorDescription = errorPayload.error_description || 'No error description returned';
+    console.error('France Travail OAuth failed:', { status: tokenResponse.status, error: errorText, error_description: errorDescription });
     return [];
   }
 
@@ -36,10 +40,10 @@ export async function searchFranceTravailJobs(query: string): Promise<Normalized
     return [];
   }
 
-  const searchUrl = new URL('https://api.francetravail.io/partenaire/offresdemploi/v1/offres/search');
+  const searchUrl = new URL('https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search');
   const params = new URLSearchParams({
-    motCle: query,
-    range: '0-20',
+    motsCles: query,
+    range: '0-19',
   });
   searchUrl.search = params.toString();
 
@@ -47,11 +51,14 @@ export async function searchFranceTravailJobs(query: string): Promise<Normalized
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: 'application/json',
-      'User-Agent': 'JobRadar/1.0',
     },
   });
 
   if (!searchResponse.ok) {
+    const errorPayload = (await searchResponse.json().catch(() => ({}))) as { error?: string; error_description?: string };
+    const errorText = errorPayload.error || 'unknown_error';
+    const errorDescription = errorPayload.error_description || 'No error description returned';
+    console.error('France Travail search failed:', { status: searchResponse.status, error: errorText, error_description: errorDescription });
     return [];
   }
 
