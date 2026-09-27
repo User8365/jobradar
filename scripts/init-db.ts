@@ -54,7 +54,20 @@ async function initializeDatabase() {
 
   await sql`
     CREATE UNIQUE INDEX IF NOT EXISTS jobs_fingerprint_unique_idx
-    ON jobs (fingerprint);
+    ON jobs (fingerprint)
+    WHERE fingerprint IS NOT NULL AND fingerprint <> '';
+  `;
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS jobs_canonical_url_unique_idx
+    ON jobs (canonical_url)
+    WHERE canonical_url IS NOT NULL AND canonical_url <> '';
+  `;
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS jobs_source_external_unique_idx
+    ON jobs (source_id, external_id)
+    WHERE external_id IS NOT NULL AND external_id <> '';
   `;
 
   await sql`

@@ -1,13 +1,19 @@
 import * as cheerio from 'cheerio';
+import { calculateFingerprint } from '../normalize';
 import { NormalizedJob } from '../types';
 
-function deriveCompany(title: string): string {
-  const segments = title.split(/\s-\s|\s–\s|\s—\s/).map((segment) => segment.trim()).filter(Boolean);
-  if (segments.length > 1) {
-    return segments[segments.length - 1];
+function cleanUrl(rawHref: string): string {
+  try {
+    const url = new URL(rawHref.startsWith('http') ? rawHref : `https://www.hellowork.com${rawHref}`);
+    url.hash = '';
+    url.search = '';
+    if (url.hostname === 'www.hellowork.com' && /\/fr-fr\/emplois\//.test(url.pathname)) {
+      return url.toString();
+    }
+    return url.toString();
+  } catch {
+    return rawHref.trim();
   }
-
-  return '';
 }
 
 export async function searchHelloWorkJobs(query: string): Promise<NormalizedJob[]> {
@@ -34,29 +40,38 @@ export async function searchHelloWorkJobs(query: string): Promise<NormalizedJob[
 
   $('a[href*="/fr-fr/emplois/"]').each((_, element) => {
     const href = $(element).attr('href');
+    if (!href) {
+      return;
+    }
+
+    const cleanHref = cleanUrl(href);
+    const match = cleanHref.match(/\/fr-fr\/emplois\/(\d+)\.html$/i);
+    if (!match) {
+      return;
+    }
+
+    const externalId = match[1];
     const title = ($(element).text() || '').replace(/\s+/g, ' ').trim();
-
-    if (!href || !title || title.length < 5) {
+    if (!title || title.length < 5 || seen.has(externalId)) {
       return;
     }
 
-    const finalUrl = href.startsWith('http') ? href : `https://www.hellowork.com${href}`;
-    if (seen.has(finalUrl)) {
-      return;
-    }
+    seen.add(externalId);
+    const company = '';
+    const location = 'France';
+    const normalizedTitle = title;
+    const fingerprint = calculateFingerprint(normalizedTitle, company, location);
 
-    const jobId = finalUrl.match(/(\d+)\.html$/)?.[1] ?? null;
-    seen.add(finalUrl);
     jobs.push({
       source_id: 'hellowork',
-      external_id: jobId,
-      canonical_url: finalUrl,
-      title,
-      company: deriveCompany(title),
-      location: 'France',
+      external_id: externalId,
+      canonical_url: cleanHref,
+      title: normalizedTitle,
+      company,
+      location,
       description: null,
       published_at: null,
-      raw_data: { url: finalUrl, title },
+      raw_data: { url: cleanHref, title: normalizedTitle, company, location, fingerprint },
     });
   });
 

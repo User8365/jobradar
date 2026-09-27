@@ -1,17 +1,20 @@
 import { sourceSearchAll } from '@/lib/sources';
+import { deduplicateAndSaveJobs } from '@/lib/dedupe';
 
 export type SearchTriggerType = 'cron' | 'manual';
 
 export async function runSearch({ trigger_type = 'manual' }: { trigger_type?: SearchTriggerType } = {}) {
   const query = 'responsable support informatique';
   const jobs = await sourceSearchAll(query);
+  const { newJobs, updatedCount } = await deduplicateAndSaveJobs(jobs);
 
   return {
     success: true,
     trigger_type,
-    jobsAdded: jobs.length,
-    updatedCount: 0,
-    message: `Recherche exécutée sur ${jobs.length} offres détectées sur les sources actives.`
+    jobsDetected: jobs.length,
+    jobsAdded: newJobs,
+    updatedCount,
+    message: `Recherche exécutée sur ${jobs.length} résultats bruts, ${newJobs} nouvelles offres ajoutées.`
   };
 }
 
