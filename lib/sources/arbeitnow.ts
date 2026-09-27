@@ -10,13 +10,31 @@ function parseRemoteScope(locationText: string | null | undefined): { remote_sco
   const raw = (locationText ?? '').trim();
   if (!raw) return { remote_scope: 'unknown', remote_scope_text: null };
   const lower = raw.toLowerCase();
-  if (/worldwide|anywhere|remote/i.test(lower)) return { remote_scope: 'worldwide', remote_scope_text: raw };
-  if (/france|france only|france-based/i.test(lower)) return { remote_scope: 'france', remote_scope_text: raw };
-  if (/europe|european|e.u./i.test(lower)) return { remote_scope: 'europe', remote_scope_text: raw };
-  if (/utc|gmt|cest|cet|timezone|time zone/i.test(lower)) return { remote_scope: 'timezone_restricted', remote_scope_text: raw };
-  if (/us|usa|uk|gb|canada|germany|spain|italy|netherlands|sweden|denmark|poland|austria|belgium|switzerland|ireland|norway/i.test(lower)) {
+
+  if (/\b(?:worldwide|work from anywhere|anywhere(?: only)?|worldwide only)\b/.test(lower)) {
+    return { remote_scope: 'worldwide', remote_scope_text: raw };
+  }
+
+  if (/\b(?:us only|usa only|united states only|canada only|uk only|gb only|germany only|spain only|italy only|netherlands only|sweden only|denmark only|poland only|austria only|belgium only|switzerland only|ireland only|norway only)\b/.test(lower)) {
     return { remote_scope: 'country_list', remote_scope_text: raw };
   }
+
+  if (/\b(?:france(?: only)?|france-based)\b/.test(lower)) {
+    return { remote_scope: 'france', remote_scope_text: raw };
+  }
+
+  if (/\b(?:europe(?: only)?|european)\b/.test(lower) || /remote\s*-\s*europe/.test(lower)) {
+    return { remote_scope: 'europe', remote_scope_text: raw };
+  }
+
+  if (/\b(?:cet|cest|gmt|utc|timezone|time zone)\b/.test(lower) || /(?:remote|anywhere).*?(?:cet|cest|gmt|utc|timezone|time zone)/.test(lower)) {
+    return { remote_scope: 'timezone_restricted', remote_scope_text: raw };
+  }
+
+  if (/remote\b/.test(lower) && !/\b(?:worldwide|work from anywhere|anywhere|europe|france|us only|usa only|canada only|uk only|gb only|timezone|utc|gmt|cet|cest)\b/.test(lower)) {
+    return { remote_scope: 'unknown', remote_scope_text: raw };
+  }
+
   return { remote_scope: 'unknown', remote_scope_text: raw };
 }
 
@@ -42,7 +60,9 @@ export async function searchArbeitnowJobs(query: string): Promise<NormalizedJob[
     const rawLocation = typeof job.location === 'string' ? job.location : (job.remote_location ?? null);
     const scopeInfo = parseRemoteScope(rawLocation);
     const description = stripHtml(job.description ?? null);
-    const remoteExplicit = typeof job.remote === 'boolean' ? job.remote : (typeof job.remote === 'string' ? /remote|hybrid/i.test(job.remote) : false);
+    const remoteValue = typeof job.remote === 'string' ? job.remote.trim().toLowerCase() : null;
+    const remoteExplicit = typeof job.remote === 'boolean' ? job.remote : (remoteValue === 'remote' || remoteValue === 'fully remote' || remoteValue === 'work from anywhere');
+    const hybridExplicit = remoteValue === 'hybrid';
     const remoteMeta = classifyRemoteMetadata({
       source_id: 'arbeitnow',
       description,
@@ -51,13 +71,17 @@ export async function searchArbeitnowJobs(query: string): Promise<NormalizedJob[
       raw_data: {
         ...job,
         location: rawLocation,
-        remote: remoteExplicit ? 'remote' : job.remote,
+        remote: remoteValue ?? job.remote,
       },
     });
 
-    let remoteType = remoteMeta.remote_type;
+    let remoteType: 'onsite' | 'hybrid' | 'full_remote' | 'unknown' = remoteMeta.remote_type as 'onsite' | 'hybrid' | 'full_remote' | 'unknown';
     let remoteEvidence = remoteMeta.remote_evidence;
-    if (remoteExplicit) {
+
+    if (hybridExplicit) {
+      remoteType = 'hybrid';
+      remoteEvidence = 'structured_field';
+    } else if (remoteExplicit) {
       remoteType = 'full_remote';
       remoteEvidence = 'structured_field';
     }

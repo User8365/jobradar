@@ -23,8 +23,15 @@ export async function GET(req: NextRequest) {
     params.push(contract_type);
   }
   if (remote_type) {
-    whereClauses.push('remote_type = $' + (params.length + 1));
-    params.push(remote_type);
+    if (remote_type === 'full_remote') {
+      whereClauses.push('remote_type = $' + (params.length + 1));
+      params.push(remote_type);
+      whereClauses.push('remote_evidence IN ($' + (params.length + 1) + ', $' + (params.length + 2) + ', $' + (params.length + 3) + ')');
+      params.push('structured_field', 'explicit_source_label', 'remote_only_source');
+    } else {
+      whereClauses.push('remote_type = $' + (params.length + 1));
+      params.push(remote_type);
+    }
   }
   if (location) {
     whereClauses.push('location = $' + (params.length + 1));
@@ -47,6 +54,9 @@ export async function GET(req: NextRequest) {
       location,
       contract_type,
       remote_type,
+      remote_scope,
+      remote_evidence,
+      remote_scope_text,
       published_at,
       created_at,
       raw_data

@@ -73,4 +73,59 @@ describe('remote metadata rules', () => {
     expect(result.remote_scope).toBe('country_list');
     expect(result.remote_evidence).toBe('remote_only_source');
   });
+
+  it('classifies explicit US-only remote roles as full_remote with country_list', () => {
+    const result = classifyRemoteMetadata({
+      source_id: 'remote_ok',
+      raw_data: { location: 'Remote - US only', remote: 'remote' },
+      description: 'Remote role',
+    } as any);
+
+    expect(result.remote_type).toBe('full_remote');
+    expect(result.remote_scope).toBe('country_list');
+  });
+
+  it('classifies explicit Europe remote roles as full_remote with europe', () => {
+    const result = classifyRemoteMetadata({
+      source_id: 'remote_ok',
+      raw_data: { location: 'Remote - Europe', remote: 'remote' },
+      description: 'Remote role',
+    } as any);
+
+    expect(result.remote_type).toBe('full_remote');
+    expect(result.remote_scope).toBe('europe');
+  });
+
+  it('treats plain remote labels as full_remote with unknown scope for remote-only sources', () => {
+    const result = classifyRemoteMetadata({
+      source_id: 'remote_ok',
+      raw_data: { location: 'Remote', remote: 'remote' },
+      description: 'Remote role',
+    } as any);
+
+    expect(result.remote_type).toBe('full_remote');
+    expect(result.remote_scope).toBe('unknown');
+  });
+
+  it('keeps hybrid marked on Arbeitnow as hybrid and never as full_remote', () => {
+    const result = classifyRemoteMetadata({
+      source_id: 'arbeitnow',
+      raw_data: { location: 'Remote', remote: 'hybrid' },
+      description: 'Hybrid role',
+    } as any);
+
+    expect(result.remote_type).toBe('unknown');
+    expect(result.remote_evidence).toBe('none');
+  });
+
+  it('excludes weak evidence from the full_remote API filter', async () => {
+    const weak = classifyRemoteMetadata({
+      source_id: 'arbeitnow',
+      raw_data: { location: 'Remote', remote: null },
+      description: 'remote',
+    } as any);
+
+    expect(weak.remote_type).toBe('unknown');
+    expect(weak.remote_evidence).toBe('text_only');
+  });
 });
