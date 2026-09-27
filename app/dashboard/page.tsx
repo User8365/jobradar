@@ -1,5 +1,7 @@
 import { getDb } from '@/lib/db/client';
 
+export const dynamic = 'force-dynamic';
+
 async function getDashboardJobs() {
   const sql = getDb();
   return sql`
