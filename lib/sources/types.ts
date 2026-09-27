@@ -1,4 +1,4 @@
-export type SourceName = 'adzuna' | 'apec' | 'hackernews' | 'hellowork';
+export type SourceName = 'adzuna' | 'apec' | 'france_travail' | 'hackernews' | 'hellowork';
 
 export interface SourceJob {
   id: string;

@@ -1,4 +1,4 @@
-import { searchAdzunaJobs, getSourceRegistry } from '../lib/sources';
+import { searchAdzunaJobs, searchFranceTravailJobs, getSourceRegistry } from '../lib/sources';
 
 describe('normalize', () => {
   it('works', () => {
@@ -16,6 +16,18 @@ describe('source registry', () => {
     expect(adzuna?.enabledByDefault).toBe(false);
 
     const jobs = await searchAdzunaJobs('responsable support informatique');
+    expect(jobs).toEqual([]);
+  });
+
+  it('requires France Travail credentials before live execution', async () => {
+    const registry = getSourceRegistry();
+    const franceTravail = registry.find((source) => source.id === 'france_travail');
+
+    expect(franceTravail).toBeTruthy();
+    expect(franceTravail?.credentialsRequired).toEqual(['FRANCE_TRAVAIL_CLIENT_ID', 'FRANCE_TRAVAIL_CLIENT_SECRET']);
+    expect(franceTravail?.enabledByDefault).toBe(false);
+
+    const jobs = await searchFranceTravailJobs('support informatique');
     expect(jobs).toEqual([]);
   });
 });

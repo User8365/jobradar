@@ -1,13 +1,14 @@
 import { NormalizedJob } from '../types';
 import { searchAdzunaJobs } from './adzuna';
 import { searchApecJobs } from './apec';
+import { searchFranceTravailJobs } from './france-travail';
 import { searchHackerNewsJobs } from './hackernews';
 import { searchHelloWorkJobs } from './hellowork';
 
 export type SourceVerdict = 'GO' | 'GO_WITH_CREDENTIALS' | 'GO_WITH_LIMITS' | 'NO_GO' | 'NOT_TESTED';
 
 export interface SourceDescriptor {
-  id: 'adzuna' | 'apec' | 'hackernews' | 'hellowork';
+  id: 'adzuna' | 'apec' | 'france_travail' | 'hackernews' | 'hellowork';
   name: string;
   credentialsRequired: string[];
   enabledByDefault: boolean;
@@ -24,6 +25,14 @@ export function getSourceRegistry(): SourceDescriptor[] {
       enabledByDefault: false,
       verdict: 'GO_WITH_CREDENTIALS',
       search: searchAdzunaJobs,
+    },
+    {
+      id: 'france_travail',
+      name: 'France Travail',
+      credentialsRequired: ['FRANCE_TRAVAIL_CLIENT_ID', 'FRANCE_TRAVAIL_CLIENT_SECRET'],
+      enabledByDefault: false,
+      verdict: 'GO_WITH_CREDENTIALS',
+      search: searchFranceTravailJobs,
     },
     {
       id: 'hellowork',
@@ -66,6 +75,7 @@ export async function sourceSearchAll(query: string): Promise<NormalizedJob[]> {
 
 export { searchAdzunaJobs } from './adzuna';
 export { searchApecJobs } from './apec';
+export { searchFranceTravailJobs } from './france-travail';
 export { searchHackerNewsJobs } from './hackernews';
 export { searchHelloWorkJobs } from './hellowork';
 
