@@ -65,20 +65,31 @@ export async function searchFranceTravailJobs(query: string): Promise<Normalized
   const payload = (await searchResponse.json()) as { resultats?: Array<Record<string, any>> };
   const results = payload.resultats ?? [];
 
-  return results.map((job) => ({
-    source_id: 'france_travail',
-    external_id: job.idOffre || job.id || null,
-    canonical_url: job.origineOffre?.url || job.origineOffre?.lien || job.url || '',
-    title: job.intitule || '',
-    company: job.entreprise?.nom || job.entreprise?.denomination || '',
-    location: job.lieuTravail?.libelle || job.lieuTravail?.codePostal || 'France',
-    contract_type: job.typeContrat || null,
-    work_time: job.dureeTravailLibelle || null,
-    salary_text: job.remuneration?.libelle || null,
-    salary_min: typeof job.remuneration?.salaireMin === 'number' ? job.remuneration.salaireMin : null,
-    salary_max: typeof job.remuneration?.salaireMax === 'number' ? job.remuneration.salaireMax : null,
-    description: job.description || job.descriptionCourte || null,
-    published_at: job.dateCreation || job.datePublication || null,
-    raw_data: job,
-  }));
+  return results.map((job) => {
+    const offerId = job.idOffre || job.id || null;
+    const canonicalUrl =
+      job.origineOffre?.urlOrigine ||
+      (offerId ? `https://candidat.francetravail.fr/offres/recherche/detail/${offerId}` : '') ||
+      job.origineOffre?.url ||
+      job.origineOffre?.lien ||
+      job.url ||
+      '';
+
+    return {
+      source_id: 'france_travail',
+      external_id: offerId,
+      canonical_url: canonicalUrl,
+      title: job.intitule || '',
+      company: job.entreprise?.nom || job.entreprise?.denomination || '',
+      location: job.lieuTravail?.libelle || job.lieuTravail?.codePostal || 'France',
+      contract_type: job.typeContrat || null,
+      work_time: job.dureeTravailLibelle || null,
+      salary_text: job.remuneration?.libelle || null,
+      salary_min: typeof job.remuneration?.salaireMin === 'number' ? job.remuneration.salaireMin : null,
+      salary_max: typeof job.remuneration?.salaireMax === 'number' ? job.remuneration.salaireMax : null,
+      description: job.description || job.descriptionCourte || null,
+      published_at: job.dateCreation || job.datePublication || null,
+      raw_data: job,
+    };
+  });
 }

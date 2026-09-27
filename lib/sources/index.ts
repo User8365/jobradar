@@ -30,7 +30,7 @@ export function getSourceRegistry(): SourceDescriptor[] {
       id: 'france_travail',
       name: 'France Travail',
       credentialsRequired: ['FRANCE_TRAVAIL_CLIENT_ID', 'FRANCE_TRAVAIL_CLIENT_SECRET'],
-      enabledByDefault: false,
+      enabledByDefault: true,
       verdict: 'GO_WITH_CREDENTIALS',
       search: searchFranceTravailJobs,
     },
@@ -62,7 +62,7 @@ export function getSourceRegistry(): SourceDescriptor[] {
 }
 
 export async function sourceSearchAll(query: string): Promise<NormalizedJob[]> {
-  const sources = getSourceRegistry();
+  const sources = getSourceRegistry().filter((source) => source.enabledByDefault === true);
   const jobs: NormalizedJob[] = [];
 
   for (const source of sources) {

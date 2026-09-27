@@ -25,7 +25,7 @@ describe('source registry', () => {
 
     expect(franceTravail).toBeTruthy();
     expect(franceTravail?.credentialsRequired).toEqual(['FRANCE_TRAVAIL_CLIENT_ID', 'FRANCE_TRAVAIL_CLIENT_SECRET']);
-    expect(franceTravail?.enabledByDefault).toBe(false);
+    expect(franceTravail?.enabledByDefault).toBe(true);
 
     const jobs = await searchFranceTravailJobs('support informatique');
     expect(jobs).toEqual([]);
